@@ -10,6 +10,8 @@ import Modify from 'ol/interaction/Modify';
 import Draw from 'ol/interaction/Draw';
 import Snap from 'ol/interaction/Snap';
 import {Style, Fill, Stroke} from 'ol/style';
+import {getArea} from 'ol/sphere';
+import colormap from 'colormap';
 
 
 const map = new Map({
@@ -35,14 +37,16 @@ const source = new VectorSource();
 // Create a vector layer and add it to the map
 const layer = new VectorLayer({
     source: source,
-    style: new Style({
-        fill: new Fill({
-            color: 'red'
-        }),
-        stroke: new Stroke({
-            color: 'white'
+    style: function(feature){
+        return new Style({
+            fill: new Fill({
+                color: getColor(feature)
+            }),
+            stroke: new Stroke({
+                color: 'rgba(255, 255, 255, 0.8)'
+            })
         })
-    })
+    }
 });
 
 map.addLayer(layer);
@@ -87,6 +91,27 @@ source.on('change', function(){
     const json = format.writeFeatures(features);
     download.href = 'data:text/json;charset=utf-8,' + json;
 });
+
+// define style functions
+const min = 1e8; // the smallest area
+const max = 2e13; // the largest area
+const steps = 50;
+const ramp = colormap({
+    colormap: 'blackbody',
+    nshades: steps
+});
+
+function clamp(value, low, high){
+    return Math.max(low, Math.min(value, high));
+}
+
+function getColor(feature){
+    const area = getArea(feature.getGeometry());
+    const f = Math.pow(clamp((area - min) / (max - min), 0, 1), 1/2);
+    const index = Math.round(f * (steps - 1));
+    return ramp[index]
+}
+
 
 // use the sync function to remember restore
 // the extent from the last session when reloading
