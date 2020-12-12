@@ -1,118 +1,65 @@
 import 'ol/ol.css';
-import GeoJSON from 'ol/format/GeoJSON';
-import Map from 'ol/Map';
+import {Map, View} from 'ol';
+import TileLayer from 'ol/layer/Tile';
+import OSMSource from 'ol/source/OSM';
+import {fromLonLat} from 'ol/proj';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
-import View from 'ol/View';
-import sync from 'ol-hashed';
-import DragAndDrop from 'ol/interaction/DragAndDrop';
-import Modify from 'ol/interaction/Modify';
-import Draw from 'ol/interaction/Draw';
-import Snap from 'ol/interaction/Snap';
-import {Style, Fill, Stroke} from 'ol/style';
-import {getArea} from 'ol/sphere';
-import colormap from 'colormap';
+import Feature from 'ol/Feature';
+import {circular} from 'ol/geom/Polygon';
+import Point from 'ol/geom/Point';
+import Control from 'ol/control/Control';
 
 
 const map = new Map({
     target: 'map-container',
-    layers:[
-        new VectorLayer({
-            source: new VectorSource({
-                format: new GeoJSON(),
-                url: './data/countries.json'
-            })
+    layers: [
+        new TileLayer({
+            source: new OSMSource()
         })
     ],
     view: new View({
-        center: [0, 0], 
+        center: fromLonLat([0, 0]),
         zoom: 2
     })
 });
 
-// add a vector source that will hold
-// the vector data added by the user
 const source = new VectorSource();
-
-// Create a vector layer and add it to the map
 const layer = new VectorLayer({
-    source: source,
-    style: function(feature){
-        return new Style({
-            fill: new Fill({
-                color: getColor(feature)
-            }),
-            stroke: new Stroke({
-                color: 'rgba(255, 255, 255, 0.8)'
-            })
-        })
-    }
+    source: source
 });
 
 map.addLayer(layer);
 
-// create a drag and drop interaction
-map.addInteraction(new DragAndDrop({
-    source: source,
-    formatConstructors: [GeoJSON]
-}));
-
-// creat a modify interaction and connect it 
-// to the vector layer added by the user
-map.addInteraction(new Modify({
-    source: source
-}));
-
-// create a draw interaction
-map.addInteraction(new Draw({
-    type: 'Polygon',
-    source: source
-}));
-
-// create a snap interaction
-map.addInteraction(new Snap({
-    source: source
-}));
-
-// add a listener for click to clear the data
-// in the vector layer
-const clear = document.getElementById('clear');
-clear.addEventListener('click', function(){
-    source.clear();
+// get the location and the accuracy from the browser
+navigator.geolocation.watchPosition(function(pos){
+    const coords = [pos.coords.longitude, pos.coords.latitude];
+    const accuracy = circular(coords, pos.coords.accuracy);
+    source.clear(true);
+    source.addFeatures([
+        new Feature(accuracy.transform('EPSG:4326', map.getView().getProjection())),
+        new Feature(new Point(fromLonLat(coords)))
+    ]);
+}, function(error) {
+    alert(`ERROR: ${error.message}`);
+}, {
+    enableHighAccuracy: true
 });
 
-// on each changement in the vector layer
-// create a geojson file and add it 
-// as a href of the download button
-const format = new GeoJSON({featureProjection: 'EPSG: 3857'});
-const download = document.getElementById('download');
-source.on('change', function(){
-    const features = source.getFeatures();
-    const json = format.writeFeatures(features);
-    download.href = 'data:text/json;charset=utf-8,' + json;
+// add a button control to center the map at the location
+// of the user and set the extent to the bbox of the accuracy
+const locate = document.createElement('div');
+locate.className = 'ol-control ol-unselectable locate';
+locate.innerHTML = '<button title="Locate me">◎</button>';
+locate.addEventListener('click', function(){
+    if (!source.isEmpty()){
+        map.getView().fit(source.getExtent(), {
+            maxZoom: 18,
+            duration: 500
+        });
+    }
 });
 
-// define style functions
-const min = 1e8; // the smallest area
-const max = 2e13; // the largest area
-const steps = 50;
-const ramp = colormap({
-    colormap: 'blackbody',
-    nshades: steps
-});
-
-function clamp(value, low, high){
-    return Math.max(low, Math.min(value, high));
-}
-
-function getColor(feature){
-    const area = getArea(feature.getGeometry());
-    const f = Math.pow(clamp((area - min) / (max - min), 0, 1), 1/2);
-    const index = Math.round(f * (steps - 1));
-    return ramp[index]
-}
-
-
-// use the sync function to remember restore
-// the extent from the last session when reloading
-sync(map);
+map.addControl(new Control({
+    element: locate
+}));
