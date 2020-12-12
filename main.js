@@ -9,6 +9,7 @@ import DragAndDrop from 'ol/interaction/DragAndDrop';
 import Modify from 'ol/interaction/Modify';
 import Draw from 'ol/interaction/Draw';
 import Snap from 'ol/interaction/Snap';
+import {Style, Fill, Stroke} from 'ol/style';
 
 
 const map = new Map({
@@ -33,7 +34,15 @@ const source = new VectorSource();
 
 // Create a vector layer and add it to the map
 const layer = new VectorLayer({
-    source: source
+    source: source,
+    style: new Style({
+        fill: new Fill({
+            color: 'red'
+        }),
+        stroke: new Stroke({
+            color: 'white'
+        })
+    })
 });
 
 map.addLayer(layer);
