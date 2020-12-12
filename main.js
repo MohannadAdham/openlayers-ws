@@ -6,7 +6,7 @@ import VectorSource from 'ol/source/Vector';
 import View from 'ol/View';
 import sync from 'ol-hashed';
 import DragAndDrop from 'ol/interaction/DragAndDrop';
-
+import Modify from 'ol/interaction/Modify';
 
 const map = new Map({
     target: 'map-container',
@@ -39,7 +39,14 @@ map.addLayer(layer);
 map.addInteraction(new DragAndDrop({
     source: source,
     formatConstructors: [GeoJSON]
-}))
+}));
+
+// creat a modify interaction and connect it 
+// to the vector layer added by the user
+map.addInteraction(new Modify({
+    source: source
+}));
+
 // use the sync function to remember restore
 // the extent from the last session when reloading
 sync(map);
