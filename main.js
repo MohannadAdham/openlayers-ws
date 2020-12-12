@@ -9,6 +9,8 @@ import Feature from 'ol/Feature';
 import {circular} from 'ol/geom/Polygon';
 import Point from 'ol/geom/Point';
 import Control from 'ol/control/Control';
+import {Style, Icon, Fill} from 'ol/style';
+import Kompas from 'kompas';
 
 
 const map = new Map({
@@ -29,6 +31,27 @@ const layer = new VectorLayer({
     source: source
 });
 
+// create a style and add it to the layer
+const style = new Style({
+    fill: new Fill({
+        color: 'rgba(0, 0, 255, 0.2)'
+    }),
+    image: new Icon({
+        src: 'data/location-heading.svg',
+        imgSize: [27, 55],
+        rotateWeithView: true
+    })
+});
+
+// get the heading from Kompas and set it
+// as rotation on the icon
+const compass = new Kompas();
+compass.watch();
+compass.on('heading', function(heading){
+    style.getImage().setRotation(Math.PI / 180 * heading);
+})
+
+layer.setStyle(style);
 map.addLayer(layer);
 
 // get the location and the accuracy from the browser
