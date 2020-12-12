@@ -7,6 +7,8 @@ import View from 'ol/View';
 import sync from 'ol-hashed';
 import DragAndDrop from 'ol/interaction/DragAndDrop';
 import Modify from 'ol/interaction/Modify';
+import Draw from 'ol/interaction/Draw';
+
 
 const map = new Map({
     target: 'map-container',
@@ -44,6 +46,12 @@ map.addInteraction(new DragAndDrop({
 // creat a modify interaction and connect it 
 // to the vector layer added by the user
 map.addInteraction(new Modify({
+    source: source
+}));
+
+// create a draw interaction
+map.addInteraction(new Draw({
+    type: 'Polygon',
     source: source
 }));
 
