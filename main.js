@@ -4,9 +4,10 @@ import Map from 'ol/Map';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import View from 'ol/View';
+import sync from 'ol-hashed';
 
 
-new Map({
+const map = new Map({
     target: 'map-container',
     layers:[
         new VectorLayer({
@@ -21,3 +22,7 @@ new Map({
         zoom: 2
     })
 });
+
+// use the sync function to remember restore
+// the extent from the last session when reloading
+sync(map);
