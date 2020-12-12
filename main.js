@@ -61,6 +61,24 @@ map.addInteraction(new Snap({
     source: source
 }));
 
+// add a listener for click to clear the data
+// in the vector layer
+const clear = document.getElementById('clear');
+clear.addEventListener('click', function(){
+    source.clear();
+});
+
+// on each changement in the vector layer
+// create a geojson file and add it 
+// as a href of the download button
+const format = new GeoJSON({featureProjection: 'EPSG: 3857'});
+const download = document.getElementById('download');
+source.on('change', function(){
+    const features = source.getFeatures();
+    const json = format.writeFeatures(features);
+    download.href = 'data:text/json;charset=utf-8,' + json;
+});
+
 // use the sync function to remember restore
 // the extent from the last session when reloading
 sync(map);
